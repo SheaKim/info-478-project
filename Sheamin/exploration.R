@@ -69,7 +69,10 @@ print(summary(model))
 
 ggplot(vax_df, aes(x = year, y = adjusted_price)) +
   geom_point() +
-  geom_smooth(method = "lm")
+  geom_smooth(method = "lm") +
+  labs(title = "Linear Regression for Year and Adjusted Vaccine Prices",
+       x = "Year",
+       y = "Adjusted Price (for Inflation)")
 
 #one tailed t test
 
