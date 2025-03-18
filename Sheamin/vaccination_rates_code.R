@@ -79,3 +79,86 @@ season_23_24 <- rates_df |>
 
 test_1<-t.test(season_22_23$numerator,season_23_24$numerator)
 test_1
+
+
+
+## reading in vax price data
+
+vax_df <- read.csv("cdc_vaccine_prices_full.csv")
+inflation_df <- read.csv("inflation_cpis.csv")
+
+#standardizing values, getting rid of $
+vax_df$Private.Sector.Cost..Dose = gsub("\\$", "", vax_df$Private.Sector.Cost..Dose) 
+vax_df$CDC.Cost..Dose = gsub("\\$", "", vax_df$CDC.Cost..Dose) 
+
+vax_df$Private.Sector.Cost..Dose <- as.numeric(as.character(vax_df$Private.Sector.Cost..Dose))
+sapply(vax_df, class)
+
+vax_df$CDC.Cost..Dose <- as.numeric(as.character(vax_df$CDC.Cost..Dose))
+sapply(vax_df, class)
+
+vax_df$Date <- as.Date(vax_df$Date)
+
+
+## Adding inflation data
+# extract the year and convert to numeric format
+vax_df$year <- as.numeric(format(vax_df$Date, "%Y"))
+
+vax_df = merge(x = vax_df, y = inflation_df, by = "year")
+vax_df$CPI <- as.numeric(as.character(vax_df$CPI))
+sapply(vax_df, class)
+
+reference_year <- 2009
+
+# Get CPI for the reference year
+reference_cpi <- vax_df$CPI[vax_df$year == reference_year]
+
+# the type of below should be double
+# print(typeof(reference_cpi)) 
+
+# Adjust prices for inflation based on the reference CPI
+vax_df$adjusted_price <- vax_df$Private.Sector.Cost..Dose * (reference_cpi / vax_df$CPI)
+vax_df$adjusted_price_cdc <- vax_df$CDC.Cost..Dose * (reference_cpi / vax_df$CPI)
+
+
+rates_df$numerator <- as.numeric(rates_df$numerator)
+
+rates_df$date <- as.Date(rates_df$date)
+
+# 1. Deduplicate by keeping only the first row for each date, jurisdiction, age group, and season
+df_dedup <- rates_df %>%
+  group_by(jurisdiction, age_group_label, current_season, date) %>%
+  slice(1) %>%               # Keep only the first row for each group
+  ungroup()
+
+# 2. Sort by jurisdiction, age group, season, and date to ensure proper order for calculating new doses
+df_dedup <- df_dedup %>%
+  arrange(jurisdiction, age_group_label, current_season, date)
+
+# 3. Calculate new doses by comparing the cumulative totals
+df_dedup <- df_dedup %>%
+  group_by(jurisdiction, age_group_label, current_season) %>%
+  mutate(new_doses = numerator - lag(numerator)) %>%    # Subtract previous month from current month
+  ungroup()
+
+df_for_cop <- df_dedup %>%
+  group_by(date) %>%
+  summarise(plot_col = sum(new_doses, na.rm = TRUE))
+
+exp_plot <- vax_df %>%
+  group_by(Date) %>%
+  summarise(new_col = mean(adjusted_price))
+  
+plot01 <- ggplot() +
+  geom_line(data=exp_plot, aes(x=Date, y=new_col)) +
+  geom_line(data=df_for_cop, aes(x=date, y=plot_col)) +
+  scale_y_continuous(
+    
+    # Features of the first axis
+    name = "First Axis",
+    
+    # Add a second axis and specify its features
+    sec.axis = sec_axis( trans=~.*10, name="Second Axis")
+  )
+
+plot01
