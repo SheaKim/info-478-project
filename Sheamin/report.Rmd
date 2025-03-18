@@ -1,0 +1,34 @@
+---
+title: "Final Report"
+author: "Sheamin Kim"
+date: "2025-03-18"
+output:
+  pdf_document: default
+  pdf: default
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup_1, message=FALSE}
+
+# Loading tidyverse library
+library(tidyverse)
+```
+
+## Price Data
+
+```{r}
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to
+prevent printing of the R code that generated the plot.
