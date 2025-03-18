@@ -69,6 +69,7 @@ test <- temp_df %>%
   ggplot(aes(x = date, y = avg_rate)) +
   geom_line()
 
+test
 
 # 22-23 and 23-24 have significantly different doses
 season_22_23 <- rates_df |>
@@ -139,11 +140,41 @@ df_dedup <- df_dedup %>%
 df_dedup <- df_dedup %>%
   group_by(jurisdiction, age_group_label, current_season) %>%
   mutate(new_doses = numerator - lag(numerator)) %>%    # Subtract previous month from current month
-  ungroup()
+  ungroup() %>%
+  mutate(new_doses = ifelse(new_doses < 0, 0, new_doses))
+
+all_totals <- df_dedup %>%
+  group_by(date) %>%
+  summarise(total_doses = sum(new_doses, na.rm = TRUE))
+
+all_totals$year <- format(all_totals$date, "%Y")
+
+all_totals$doses_div_ten <- (all_totals$total_doses) / 10
+
+yr_totals <- all_totals %>%
+  group_by(year) %>%
+  summarise(total_doses = sum(total_doses))
+
+
+price_table <- vax_df %>%
+  group_by(year) %>%
+  summarise(cost = mean(adjusted_price))
+
+price_table$cost_per_dose <- (price_table$cost) / 10
+
+price_yr_totals <- merge(x = yr_totals, y = price_table, by = "year")
+
+price_yr_totals$money_spent <- price_yr_totals$total_doses * price_yr_totals$cost_per_dose
+
+anova_result <- aov(money_spent ~ as.factor(year), data = price_yr_totals)
+summary(anova_result)
+print(anova_result)
+
 
 df_for_cop <- df_dedup %>%
   group_by(date) %>%
-  summarise(plot_col = sum(new_doses, na.rm = TRUE))
+  summarise(plot_col = sum(new_doses, na.rm = TRUE)) %>%
+  
 
 exp_plot <- vax_df %>%
   group_by(Date) %>%

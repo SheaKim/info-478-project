@@ -93,6 +93,8 @@ adj_private_cdc_comparison_plot <- vax_df %>%
   ggplot(aes(x=factor(year), y=price, group=price_type)) +
   geom_line(aes(color=price_type))
 
+adj_private_cdc_comparison_plot
+
 
 private_cdc_comparison_plot <- vax_df %>%
   group_by(year) %>%
@@ -104,6 +106,7 @@ private_cdc_comparison_plot <- vax_df %>%
   ggplot(aes(x=factor(year), y=price, group=price_type)) +
   geom_line(aes(color=price_type))
 
+private_cdc_comparison_plot
 
 # these plot/do the same thing
 grid.arrange(private_cdc_comparison_plot, adj_private_cdc_comparison_plot)
