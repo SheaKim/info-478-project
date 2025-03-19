@@ -10,7 +10,7 @@ editor_options:
     wrap: 72
 ---
 
-```{r setup_1, message=FALSE, warning=FALSE}
+```{r setup_1, message=FALSE, warning=FALSE, echo=FALSE}
 
 # Loading necessary libraries
 library(tidyverse)
@@ -61,7 +61,7 @@ sub-research questions:
 
 ## Data Cleaning/Prep
 
-```{r, results = FALSE, message=FALSE, warning=FALSE}
+```{r, results = FALSE, message=FALSE, warning=FALSE, echo=FALSE}
 ## PRICE DATA CLEANING
 
 vax_df <- read.csv("cdc_vaccine_prices_full.csv")
@@ -219,7 +219,7 @@ all vaccinations rather than a sample.
 available seasons from 2021-2022, 2022-2023, and 2023-2024. Data is
 aggregated from age ranges and jurisdictions (US states).*
 
-```{r}
+```{r, echo=FALSE}
 ## Summary Table
 monthly_trends <- rates_df %>%
   group_by(current_season, month) %>%
@@ -234,25 +234,25 @@ three seasons mentioned before. The rate was calculated by aggregating
 totals by jurisdiction, season, and age group, then dividing totals by
 calculated total population (an available data column in the raw data.*
 
-```{r}
+```{r, echo=FALSE}
 ## Basic Bar Chart
 df_clean <- df1 %>%
-  filter(!is.na(numerator)) %>% # Remove rows where numerator is NA
-  arrange(jurisdiction, current_season, age_group_label, month) %>% # Sort by jurisdiction, season, and month
-  group_by(jurisdiction, current_season, age_group_label) %>% # Group by jurisdiction, season, and age group
-  mutate(monthly_doses = numerator - lag(numerator)) %>% # Subtract previous month from current to get actual doses
-  ungroup() %>% # Remove the grouping
-  filter(!is.na(monthly_doses) & monthly_doses >= 0) # Remove NAs and negative values (in case of any
+  filter(!is.na(numerator)) %>%
+  arrange(jurisdiction, current_season, age_group_label, month) %>% 
+  group_by(jurisdiction, current_season, age_group_label) %>%
+  mutate(monthly_doses = numerator - lag(numerator)) %>% 
+  ungroup() %>%
+  filter(!is.na(monthly_doses) & monthly_doses >= 0)
 
 population_per_season_jurisdiction <- df_clean %>%
-  filter(age_group_label == "Overall") %>% # Only include rows where age_group_label is "Overall"
+  filter(age_group_label == "Overall") %>% 
   group_by(current_season, jurisdiction) %>%
   summarise(
-    unique_population = unique(population), # Get a single unique population value per jurisdiction
+    unique_population = unique(population),
     total_doses = sum(monthly_doses, na.rm = TRUE)) %>%
   group_by(current_season) %>%
   summarise(
-    total_population = sum(unique_population, na.rm = TRUE), # Sum up the unique population across all jurisdictions
+    total_population = sum(unique_population, na.rm = TRUE),
     total_doses = sum(total_doses, na.rm = TRUE)) %>%
   mutate(vaccination_rate = (total_doses / total_population) * 2.5)
 
@@ -310,7 +310,7 @@ given years (2009 to 2025), giving the number of products, average,
 minimum and maximum price for both private sector prices and CDC
 prices.*
 
-```{r}
+```{r, echo=FALSE}
 ## Summary Table
 summary_table <- vax_df %>%
   group_by(year) %>%
@@ -361,7 +361,7 @@ and is intended to track trends over time.
 showing the top ten states in percent of emergency department visits due
 to influenza.*
 
-```{r}
+```{r, echo=FALSE}
 # Create yearly summary table (limit to top 10 states)
 summary_table <- df_combined %>%
   mutate(year = year(week_end)) %>%
@@ -369,14 +369,14 @@ summary_table <- df_combined %>%
   summarize(avg_percent_influenza = mean(percent_visits_influenza, na.rm = TRUE), .groups = "drop") %>%
   arrange(desc(avg_percent_influenza)) %>%
   group_by(year) %>%
-  slice_max(order_by = avg_percent_influenza, n = 10) # Keep only the top 10 states
+  slice_max(order_by = avg_percent_influenza, n = 10)
 
 print(summary_table)
 ```
 
 ## Methods
 
-#### Individual Analysis: 
+#### Individual Analysis:
 
 Vaccination Rates
 
@@ -413,7 +413,7 @@ Price Data
     prices over time, while the alternative hypothesis was that prices
     did change significantly.
 
-#### Relationship Analysis: 
+#### Relationship Analysis:
 
 Vaccination Rates vs. ED Visits
 
@@ -453,7 +453,7 @@ Overall Visual Analysis
 
 ### Price Data
 
-```{r}
+```{r, echo=FALSE}
 plot_1 <- vax_df %>%
   group_by(year) %>%
   summarise(average_price = mean(Private.Sector.Cost..Dose), 
@@ -486,7 +486,7 @@ for inflation with reference year of 2009 using yearly CPIs. While the
 cost goes up every year, when adjusted for inflation we see that the
 cost stays pretty constant after increasing until 2017.
 
-```{r}
+```{r, echo=FALSE}
 
 adj_private_cdc_comparison_plot <- vax_df %>%
   group_by(year) %>%
@@ -557,7 +557,7 @@ when adjusted for inflation, vaccine product prices don't necessarily
 fluctuate very heavily, and this trend is even stronger with public
 sector costs.
 
-```{r}
+```{r, echo=FALSE}
 # linear regression model
 model <- lm(adjusted_price ~ year, data = vax_df)
 print(summary(model))
@@ -584,7 +584,7 @@ vaccine type, manufacturer, etc.) matter a lot as well. And when we
 visualize the model, we can see a low positive relationship, as
 confirmed by the low R squared value.
 
-```{r}
+```{r, echo=FALSE}
 test <- t.test(vax_df$Private.Sector.Cost..Dose, vax_df$CDC.Cost..Dose,
                alternative = "greater")
 test
@@ -619,7 +619,7 @@ than the CDC cost
 
 ### Vaccination Rates
 
-```{r}
+```{r, echo=FALSE}
 anova_result <- aov(numerator ~ as.factor(current_season), data = df_clean)
 summary(anova_result)
 ```
@@ -638,7 +638,7 @@ other factors rather than season alone.
 
 ### Emergency Department Visits
 
-```{r}
+```{r, echo=FALSE}
 df_for_plot <- df_combined %>%
   group_by(Date) %>%
   summarise(value = mean(percent_visits_influenza))
@@ -674,7 +674,7 @@ is that consistently from the ranges March until October the rates
 plateau to nearly 0% flu-related ED visits. There are 128 points in this
 plot total, averaged from the rates across all groups for a given date.
 
-```{r}
+```{r, echo=FALSE}
 # getting how many points per year
 point_counts <- seasonal %>%
   group_by(year) %>%
@@ -709,9 +709,9 @@ nears roughly 8% for the year 2025, verifying our other observation from
 the yearly data that 2025 held the highest rate of flu-related ED visits
 compared to years prior.
 
-```{r}
+```{r, echo=FALSE}
 anova_result <- aov(percent_visits_influenza ~ as.factor(year), data = df_combined)
-summary(anova_result) # Print ANOVA test result
+summary(anova_result)
 ```
 
 Null Hypothesis: No difference in ED visit rates between years
@@ -726,7 +726,7 @@ reject the null hypothesis.
 
 ### Vaccination Rates and Emergency Department Visits
 
-```{r}
+```{r, echo=FALSE}
 df_for_cop <- df_dedup %>%
   group_by(date) %>%
   summarise(plot_col = sum(new_doses, na.rm = TRUE))
@@ -753,7 +753,7 @@ and data visualizations to inform statistical tests down the line.
 
 ### Vaccination Rates and Vaccine Product Prices
 
-```{r}
+```{r, echo=FALSE}
 
 all_totals <- df_dedup %>%
   group_by(date) %>%
@@ -790,7 +790,7 @@ the biggest effect, but through this table we can see a general
 downwards trend. We can also use this table for statistical testing
 below.
 
-```{r}
+```{r, echo=FALSE}
 anova_result <- aov(money_spent ~ as.factor(year), data = price_yr_totals)
 summary(anova_result)
 ```
