@@ -434,7 +434,17 @@ plot_1 <- vax_df %>%
 print(plot_1)
 ```
 
-EXPLAIN HERE
+Here we have a barplot over time
+
+Bar plot of average private sector costs of flu vaccines for every year
+(n= 6-8), price adjusted for inflation with reference year of 2009
+
+Here is a bar plot of averaged private sector costs of 6 to 8 flu
+vaccine products for every year from 2009 to 2025. The blue bars are the
+given prices and the red bars are adjusted for inflation with a
+reference year of 2009 using yearly CPIs. While the cost goes up every
+year (looking at the blue bars), when adjusted for inflation we see that
+the cost stays pretty constant after increasing until 2017.
 
 ```{r}
 
@@ -447,6 +457,7 @@ adj_private_cdc_comparison_plot <- vax_df %>%
                values_to = "price") %>%
   ggplot(aes(x=factor(year), y=price, group=price_type)) +
   geom_line(aes(color=price_type), size = 1) +
+    geom_point() +
   labs(
     title = "Private Sector vs CDC Vaccine Prices, Adjusted for Inflation",
     x = "Year",
@@ -472,6 +483,7 @@ private_cdc_comparison_plot <- vax_df %>%
                values_to = "price") %>%
   ggplot(aes(x=factor(year), y=price, group=price_type)) +
   geom_line(aes(color=price_type), size = 1) +
+  geom_point() +
   labs(
     title = "Private vs CDC Vaccine Prices, Raw Price",
     x = "Year",
@@ -491,7 +503,49 @@ private_cdc_comparison_plot <- vax_df %>%
 print(grid.arrange(private_cdc_comparison_plot, adj_private_cdc_comparison_plot))
 ```
 
-EXPLAIN ABOVE PLOT HERE
+Here we have similar plots as the one before, but visualized as two line
+graphs- on top we have the raw/given average prices of vaccine products
+over time for both the private and public sector whereas on the bottom
+we have the prices adjusted for inflation with a reference year of 2009.
+There are four points averaged for every year. For the graph on top we
+can see that the the prices are generally higher and increase faster as
+well. But once adjusted for inflation we see less of an increase,
+especially more so with the public sector/CDC price. This indicates that
+when adjusted for inflation, vaccine product prices don't necessarily
+fluctuate very heavily, and this trend is even strong with public sector
+costs.
+
+```{r}
+# linear regression model
+model <- lm(adjusted_price ~ year, data = vax_df)
+print(summary(model))
+
+ggplot(vax_df, aes(x = year, y = adjusted_price)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(title = "Linear Regression for Year and Adjusted Vaccine Prices",
+       x = "Year",
+       y = "Adjusted Private Sector Price (for Inflation)")
+```
+
+EXPLAIN PLOT HERE
+
+is there a correlation between year and vaccine price
+
+So to further understand the trend, I created a linear regression model
+to see whether or not prices have a statistically significant trend over
+time. Since the p-value is **very small (9.19e-06)** and marked \*\*\*,
+this relationship is **highly statistically significant** — there **is
+evidence** that adjusted prices trend upwards over time, even accounting
+for inflation. Using the year and adjusted prices, I came out with a
+R-squared value of around .14, which means that year explains about
+14.1% of the variation in adjusted prices. So, while there **is a
+significant upward trend**, this means that  **year alone doesn't
+explain most of the variation** — other factors (like vaccine type,
+manufacturer, etc.) probably matter a lot too. 
+
+here we can see a low positive relationship, as confirmed by the low R
+squared value
 
 ```{r}
 test <- t.test(vax_df$Private.Sector.Cost..Dose, vax_df$CDC.Cost..Dose,
@@ -522,23 +576,6 @@ supports the alternative hypothesis, we can confirm that the private
 sector cost is indeed higher. The difference in means is about 4.74,
 indicating that the average private sector cost is about \$4.74 higher
 than the CDC cost
-
-```{r}
-# linear regression model
-model <- lm(adjusted_price ~ year, data = vax_df)
-print(summary(model))
-
-ggplot(vax_df, aes(x = year, y = adjusted_price)) +
-  geom_point() +
-  geom_smooth(method = "lm") +
-  labs(title = "Linear Regression for Year and Adjusted Vaccine Prices",
-       x = "Year",
-       y = "Adjusted Private Sector Price (for Inflation)")
-```
-
-EXPLAIN PLOT HERE
-
-is there a correlation between year and vaccine price
 
 ### Vaccination Rates
 
@@ -589,7 +626,7 @@ point_counts <- seasonal %>%
 
 print(point_counts)
 
-ggplot(seasonal, aes(x = factor(month_abbr), y = percent_visits_influenza, color = as.factor(year), group = year)) +
+ggplot(seasonal, aes(x = factor(month_abbr, levels = c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")), y = percent_visits_influenza, color = as.factor(year), group = year)) +
   geom_line(size=1) +
   geom_point(size=2) +
   labs(
@@ -698,8 +735,10 @@ vaccinations based on vaccination product prices over the three years
 (the null hypothesis being that there is no difference between the
 years). However due to the aggregation of the data, we are unable to
 generate a p-value making. While we could attempt to run this test on
-unaggregated data, due to the way the cumulative totals are listed it is
-difficult to get an aggregate with the right number of values for both
+unaggregated data, due to the way the cumulative totals are calculated
+it is difficult to get an aggregate with the right number of values for
+both without doubting the accuracy of totals. So at this time we can
+neither reject nor accept the null hypothesis.
 
 ## Discussion
 
