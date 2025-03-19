@@ -530,22 +530,47 @@ EXPLAIN OUTPUT HERE
 #### Emergency Department Visits
 
 ```{r}
-## MAKE THIS PRETTIER
 df_for_plot <- df_combined %>%
   group_by(Date) %>%
   summarise(value = mean(percent_visits_influenza))
 
 plot_time <- ggplot(data = df_for_plot) +
-  geom_line(aes(x = Date, y = value))
+  geom_line(aes(x = Date, y = value), color = "cyan3") +
+  geom_point(aes(x = Date, y = value), color = "chocolate1") +
+  labs(
+    title = "Seasonal Influenza ED Visit Percentages Over Time",
+    x = "Date",
+    y = "Percent of Visits for Influenza"
+  ) +
+  theme_minimal()
 
-plot_time
-
-## MAKE THIS PRETTIER
-ggplot(seasonal, aes(x = factor(month_abbr), y = percent_visits_influenza, color = as.factor(year), group = year)) +
-  geom_smooth()
+plot_time # n = 128 values
 ```
 
-EXPLAIN PLOT HERE
+EXPLAIN PLOT(s) HERE
+
+```{r}
+# getting how many points per year
+point_counts <- seasonal %>%
+  group_by(year) %>%
+  summarise(n = n())
+
+print(point_counts)
+
+ggplot(seasonal, aes(x = factor(month_abbr), y = percent_visits_influenza, color = as.factor(year), group = year)) +
+  geom_line(size=1) +
+  geom_point(size=2) +
+  labs(
+    title = "Seasonal Influenza ED Visit Percentages by Month",
+    x = "Month",
+    y = "Percent of Visits for Influenza",
+    color = "Year"  # Legend title
+  ) +
+  theme_minimal() +
+  theme(
+    legend.key = element_rect(fill = "white", color = "black")
+  )
+```
 
 ```{r}
 anova_result <- aov(percent_visits_influenza ~ as.factor(year), data = df_combined)
@@ -563,13 +588,8 @@ df_for_cop <- df_dedup %>%
   group_by(date) %>%
   summarise(plot_col = sum(new_doses, na.rm = TRUE))
 
-#ggplot() +
- # geom_line(data=seasonal, aes(x = Date, y = percent_visits_influenza)) +
-  #geom_line(data=temp_df, aes(x = date, y = avg_rate))
-
 merged = merge(df_for_cop, seasonal, by.x="date", by.y="Date")
 
-## BAD TEST HERE
 # cor.test(merged$plot_col, merged$percent_visits_influenza, method = "pearson")
 
 ```
