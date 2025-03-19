@@ -1,6 +1,6 @@
 ---
-title: "Final Report"
-author: "Sheamin Kim"
+title: "TITLE TBD"
+author: "Sheamin Kim, Lomash Sharma, Chris Joon Moy"
 date: "2025-03-18"
 output:
   pdf_document: default
@@ -10,7 +10,7 @@ editor_options:
     wrap: 72
 ---
 
-```{r setup_1, message=FALSE}
+```{r setup_1, message=FALSE, warning=FALSE}
 
 # Loading necessary libraries
 library(tidyverse)
@@ -25,7 +25,7 @@ PASTE HERE
 
 ## Data Cleaning/Prep
 
-```{r}
+```{r, results = FALSE, message=FALSE, warning=FALSE}
 ## PRICE DATA CLEANING
 
 vax_df <- read.csv("cdc_vaccine_prices_full.csv")
@@ -52,11 +52,8 @@ sapply(vax_df, class)
 
 reference_year <- 2009
 
-# Get CPI for the reference year
+# Get CPI for the reference year (2009)
 reference_cpi <- vax_df$CPI[vax_df$year == reference_year]
-
-# the type of below should be double
-# print(typeof(reference_cpi)) 
 
 # Adjust prices for inflation based on the reference CPI
 vax_df$adjusted_price <- vax_df$Private.Sector.Cost..Dose * (reference_cpi / vax_df$CPI)
@@ -69,7 +66,7 @@ df1 <- read.csv("monthly_cumulative.csv")
 # Define the correct month order
 month_levels <- c("SEP","OCT","NOV","DEC","JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG")
 
-# Step 1: Ensure month is a factor for proper sorting
+# Ensure month is a factor for proper sorting
 df1 <- df1 %>%
   mutate(month = factor(month, levels = month_levels))
 
@@ -78,7 +75,7 @@ rates_df <- df1 %>%
   arrange(current_season, jurisdiction, age_group_label, month) %>%
   group_by(current_season, jurisdiction, age_group_label) %>%
   mutate(
-    new_doses = numerator - lag(numerator, default = NA)  # New doses = current - previous
+    new_doses = numerator - lag(numerator, default = NA)
   ) %>%
   ungroup()
 
@@ -94,8 +91,7 @@ rates_df <- rates_df %>%
   mutate(vax_rate = new_doses / coalesce(population, overall_population))
 
 rates_df <- rates_df %>%
-  mutate(start_year = as.integer(substr(current_season, 1, 4)),  # Extract the first year
-         # Combine starting year with month to create a valid date
+  mutate(start_year = as.integer(substr(current_season, 1, 4)),
          date = as.Date(paste(start_year, month, "01", sep = "-"), format = "%Y-%b-%d"))
 
 df_dedup <- rates_df %>%
@@ -103,14 +99,14 @@ df_dedup <- rates_df %>%
   slice(1) %>%               # Keep only the first row for each group
   ungroup()
 
-# 2. Sort by jurisdiction, age group, season, and date to ensure proper order for calculating new doses
+# Sort by jurisdiction, age group, season, and date to ensure proper order for calculating new doses
 df_dedup <- df_dedup %>%
   arrange(jurisdiction, age_group_label, current_season, date)
 
-# 3. Calculate new doses by comparing the cumulative totals
+# Calculate new doses by comparing the cumulative totals
 df_dedup <- df_dedup %>%
   group_by(jurisdiction, age_group_label, current_season) %>%
-  mutate(new_doses = numerator - lag(numerator)) %>%    # Subtract previous month from current month
+  mutate(new_doses = numerator - lag(numerator)) %>%
   ungroup() %>%
   mutate(new_doses = ifelse(new_doses < 0, 0, new_doses))
 
@@ -120,6 +116,7 @@ file1 <- "ed_traj.csv"
 file2 <- "ed_visits.csv"
 df_1 <- read.csv(file1)
 df_2 <- read.csv(file2)
+
 # Convert week_end to Date format
 df_1$week_end <- as.Date(df_1$week_end, format="%Y-%m-%d")
 df_2$week_end <- as.Date(df_2$week_end, format="%Y-%m-%d")
@@ -130,7 +127,7 @@ df1_clean <- df_1 %>%
   filter(!is.na(percent_visits_influenza))
 # Clean df2 (Demographics dataset) - Select flu data only
 df2_clean <- df_2 %>%
-  filter(pathogen == "Influenza") %>% # Select only Influenza-related ED visits
+  filter(pathogen == "Influenza") %>%
   select(week_end, geography, percent_visits) %>%
   rename(percent_visits_influenza = percent_visits) %>%
   filter(!is.na(percent_visits_influenza))
@@ -149,6 +146,7 @@ seasonal <- df_combined %>%
   group_by(Date) %>%
   summarise(percent_visits_influenza = mean(percent_visits_influenza))
 
+# create year and month columns based on date
 seasonal$Date <- as.Date(seasonal$Date)
 seasonal$year <- format(seasonal$Date, "%Y")
 seasonal$month <- format(seasonal$Date, "%m")
@@ -181,7 +179,9 @@ calculating vaccination rates are sourced from the U.S. Census Bureau's
 2020 estimates. Standard errors are not provided, as the data includes
 all vaccinations rather than a sample.
 
-[EXPLANATION FOR THESE HERE]
+*The table below shows the number of new doses a month across the three
+available seasons from 2021-2022, 2022-2023, and 2023-2024. Data is
+aggregated from age ranges and jurisdictions (US states).*
 
 ```{r}
 ## Summary Table
@@ -192,6 +192,11 @@ monthly_trends <- rates_df %>%
 
 print(monthly_trends)
 ```
+
+*The bar chart below shows the flu vaccination rate for each of the
+three seasons mentioned before. The rate was calculated by aggregating
+totals by jurisdiction, season, and age group, then dividing totals by
+calculated total population (an available data column in the raw data.*
 
 ```{r}
 ## Basic Bar Chart
@@ -246,11 +251,19 @@ Codes (NDCs), packaging information, CDC cost per dose, private sector
 cost per dose, contract end dates, and manufacturers. This data allows
 for an analysis of pricing trends over time, identifying fluctuations in
 vaccine costs and potential disparities between public and private
-sector pricing. However, obtaining historical data required web scraping
-or API access, as the archived prices are distributed across multiple
-web pages.
+sector pricing.
 
-[EXPLANATION HERE] 
+Obtaining historical data was attempted with web scraping or API access,
+as the archived prices are distributed across multiple web pages. When
+this proved not possible given the archived status of all pages, data
+was manually extracted from four time points in every year (one point
+per season, drawing mostly from months January or February, March or
+April or May, July or August, and September and October).
+
+*The summary table below summarizes the product data across all the
+given years (2009 to 2025), giving the number of products, average,
+minimum and maximum price for both private sector prices and CDC
+prices.*
 
 ```{r}
 ## Summary Table
@@ -299,7 +312,9 @@ The data set is available in two formats:
 The data is collected from health facilities participating in the NSSP
 and is intended to track trends over time.
 
-[EXPLANATION HERE]
+*The table below gives a summarized preliminary geographical analysis,
+showing the top ten states in percent of emergency department visits due
+to influenza.*
 
 ```{r}
 # Create yearly summary table (limit to top 10 states)
@@ -316,7 +331,76 @@ print(summary_table)
 
 ## Methods
 
-TEXT HERE
+#### Individual Analysis: 
+
+Vaccination Rates
+
+-   To analyze vaccination rates across different seasons, new dose
+    values and rate values were computed from the raw data. An Analysis
+    of Variance (ANOVA) was conducted to determine if there were
+    statistically significant differences in vaccination rates across
+    the various seasons. ANOVA was chosen as it allows for the
+    comparison of means across multiple groups, in this case, different
+    vaccination seasons. The null hypothesis for this test was that
+    there is no significant difference in vaccination rates across the
+    seasons, while the alternative hypothesis was that at least one
+    season's vaccination rate differed significantly from the others.
+
+Emergency Department (ED) Visits
+
+-   To examine trends in emergency department visits over the years, an
+    ANOVA was also performed. This test was selected to assess whether
+    there were statistically significant differences in the mean number
+    of ED visits across the years included in the dataset. The null
+    hypothesis assumed that there was no significant variation in ED
+    visits from year to year, while the alternative hypothesis suggested
+    that at least one year group’s mean had a significantly different
+    number of ED visits.
+
+Price Data
+
+-   To determine if there was a significant change in vaccine prices
+    over time, a linear regression analysis was performed. Linear
+    regression was chosen to model the relationship between time (years)
+    and vaccine prices, allowing us to assess the slope of the trend and
+    determine if price changes over time were statistically significant.
+    The null hypothesis was that there was no significant change in
+    prices over time, while the alternative hypothesis was that prices
+    did change significantly.
+
+#### Relationship Analysis: 
+
+Vaccination Rates vs. ED Visits
+
+-   An attempt was made to perform a correlation analysis to examine the
+    relationship between vaccination rates and ED visits. However, due
+    to insufficient data points, a reliable correlation could not be
+    established. Correlation analysis would have been used to determine
+    if there was a linear relationship between vaccination rates and ED
+    visits, with the intent of seeing if higher vaccination rates
+    correlated with lower ED visits.
+
+Vaccination Rates vs. Price Data
+
+-   To analyze the relationship between vaccination rates and price
+    data, the total amount spent on vaccines each year was computed by
+    multiplying the number of doses administered by the price per dose.
+    An ANOVA was then conducted to determine if there were statistically
+    significant differences in the total amount spent on vaccines across
+    the years. This test was chosen to assess if changes in spending
+    over time were significant. The null hypothesis was that there was
+    no significant difference in the total amount spent each year, while
+    the alternative hypothesis was that at least one year shows a
+    significant difference in the total amount spent on vaccines.
+
+Overall Visual Analysis
+
+-   Throughout the analysis, visual analysis was utilized with
+    preliminary plots to explore the data and identify potential trends.
+    Some of these preliminary plots are not included here for the sake
+    of relevancy and conciseness, but they were instrumental in guiding
+    the selection of appropriate statistical tests and interpreting the
+    results.
 
 ## Results
 
@@ -325,7 +409,6 @@ TEXT HERE
 #### Price Data
 
 ```{r}
-## EDIT TITLE
 plot_1 <- vax_df %>%
   group_by(year) %>%
   summarise(average_price = mean(Private.Sector.Cost..Dose), 
@@ -339,8 +422,14 @@ plot_1 <- vax_df %>%
   scale_x_discrete(labels = 2009:2025, breaks = 2009:2025) +
   labs(title = "Average Price of 10 Influenza Vaccine Doses",
        x = "Year",
-       y = "Price",
-       fill = "Adjusted for Inflation") 
+       y = "Price (in USD)",
+       fill = "Price Type") +
+  theme_minimal() +
+  scale_fill_manual(values = c("average_price" = "cyan3", 
+                               "average_adjust_price" = "chocolate1"),
+                    labels = c("average_price" = "Average Price", 
+                               "average_adjust_price" = "Inflation-Adjusted Price")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 print(plot_1)
 ```
@@ -349,7 +438,6 @@ EXPLAIN HERE
 
 ```{r}
 
-##EDIT TITLES AND STUFF
 adj_private_cdc_comparison_plot <- vax_df %>%
   group_by(year) %>%
   summarise(average_priv_price = mean(adjusted_price), 
@@ -358,9 +446,21 @@ adj_private_cdc_comparison_plot <- vax_df %>%
                names_to = "price_type", 
                values_to = "price") %>%
   ggplot(aes(x=factor(year), y=price, group=price_type)) +
-  geom_line(aes(color=price_type))
-
-adj_private_cdc_comparison_plot
+  geom_line(aes(color=price_type), size = 1) +
+  labs(
+    title = "Private Sector vs CDC Vaccine Prices, Adjusted for Inflation",
+    x = "Year",
+    y = "Price (in USD)",
+    color = "Price Type"
+  ) +
+  scale_color_manual(
+    values = c("average_priv_price" = "cyan3", 
+               "average_cdc_price" = "chocolate1"),
+    labels = c("average_priv_price" = "Private Sector Price", 
+               "average_cdc_price" = "CDC Price")  # Custom legend labels
+  ) +
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 
 private_cdc_comparison_plot <- vax_df %>%
@@ -371,9 +471,22 @@ private_cdc_comparison_plot <- vax_df %>%
                names_to = "price_type", 
                values_to = "price") %>%
   ggplot(aes(x=factor(year), y=price, group=price_type)) +
-  geom_line(aes(color=price_type))
+  geom_line(aes(color=price_type), size = 1) +
+  labs(
+    title = "Private vs CDC Vaccine Prices, Raw Price",
+    x = "Year",
+    y = "Price (in USD)",
+    color = "Price Type"
+  ) +
+  scale_color_manual(
+    values = c("average_priv_price" = "cyan3", 
+               "average_cdc_price" = "chocolate1"),
+    labels = c("average_priv_price" = "Private Sector Price", 
+               "average_cdc_price" = "CDC Price")
+  ) +
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-private_cdc_comparison_plot
 
 print(grid.arrange(private_cdc_comparison_plot, adj_private_cdc_comparison_plot))
 ```
@@ -389,7 +502,7 @@ test
 EXPLAIN T-TEST RESULTS HERE
 
 ```{r}
-# lin reg - is there a correlation between year and vaccine price
+# linear regression model
 model <- lm(adjusted_price ~ year, data = vax_df)
 print(summary(model))
 
@@ -403,10 +516,13 @@ ggplot(vax_df, aes(x = year, y = adjusted_price)) +
 
 EXPLAIN PLOT HERE
 
+is there a correlation between year and vaccine price
+
 #### Vaccination Rates
 
 ```{r}
-## ANOVA CODE HERE
+anova_result <- aov(numerator ~ as.factor(current_season), data = df_clean)
+summary(anova_result)
 ```
 
 EXPLAIN OUTPUT HERE
@@ -423,6 +539,10 @@ plot_time <- ggplot(data = df_for_plot) +
   geom_line(aes(x = Date, y = value))
 
 plot_time
+
+## MAKE THIS PRETTIER
+ggplot(seasonal, aes(x = factor(month_abbr), y = percent_visits_influenza, color = as.factor(year), group = year)) +
+  geom_smooth()
 ```
 
 EXPLAIN PLOT HERE
@@ -442,10 +562,6 @@ EXPLAIN FINDINGS
 df_for_cop <- df_dedup %>%
   group_by(date) %>%
   summarise(plot_col = sum(new_doses, na.rm = TRUE))
-
-## MAKE THIS PRETTIER
-ggplot(seasonal, aes(x = factor(month_abbr), y = percent_visits_influenza, color = as.factor(year), group = year)) +
-  geom_smooth()
 
 #ggplot() +
  # geom_line(data=seasonal, aes(x = Date, y = percent_visits_influenza)) +
@@ -502,14 +618,3 @@ EXPLANATION HERE
 ## Discussion
 
 text here
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to
-prevent printing of the R code that generated the plot.
